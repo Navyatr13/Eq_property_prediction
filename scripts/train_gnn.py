@@ -10,8 +10,8 @@ from visualization import plot_losses, plot_roc_curve
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from utils import set_global_seed
 # Paths to train and validation directories
-train_dir = "D:/Equivarance_property_prediction/data/processed_train/"
-val_dir = "D:/Equivarance_property_prediction/data/processed_val/"
+train_dir = "./data/processed_train/"
+val_dir = "./data/processed_val/"
 
 
 # Set seed

@@ -2,11 +2,14 @@ from data_processing.read_data import read_smiles_data
 from data_processing.mol_to_graph import molecule_to_graph
 from rdkit import Chem
 import torch
+import os
 from joblib import Parallel, delayed
 import logging
 import warnings
 from rdkit import RDLogger
 from tqdm import tqdm
+from utils import check_directory, is_valid_smiles, process_smiles_to_graph
+from config import DATASET_PATHS
 
 # Suppress all warnings
 warnings.filterwarnings("ignore")
@@ -16,26 +19,7 @@ RDLogger.DisableLog('rdApp.*')
 # Configure logging
 logging.basicConfig(filename="logs/pipeline.log", level=logging.INFO, format="%(asctime)s - %(message)s")
 
-def is_valid_smiles(smiles):
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-        return mol is not None
-    except Exception:
-        return False
-
-def process_smiles_to_graph(row):
-    """
-    Converts a SMILES string into a graph.
-    Returns a tuple: (graph, success_flag)
-    """
-    try:
-        graph = molecule_to_graph(row.Canonical_SMILES, row.Toxicity_Value)
-        return graph, True  # Success
-    except Exception as e:
-        logging.error(f"Error processing SMILES {row.SMILES}: {e}")
-    #    return None, False  # Failure
-
-def run_pipeline(input_path, output_path, batch_size=1000):
+def run_pipeline(input_path, output_path, batch_size=100):
     data = read_smiles_data(input_path)
     logging.info(f"Loaded dataset with {len(data)} rows.")
 
@@ -80,16 +64,19 @@ def run_pipeline(input_path, output_path, batch_size=1000):
     print(f"Total failed graphs: {total_failure}")
 
 
-if __name__ == "__main__":
-    
-    input_path = "D:/Equivarance_property_prediction/data/New_train.csv"
-    output_path = "D:/Equivarance_property_prediction/data/processed_train/graphs"
-    run_pipeline(input_path, output_path)
-    
-    input_path = "D:/Equivarance_property_prediction/data/New_val.csv"
-    output_path = "D:/Equivarance_property_prediction/data/processed_val/graphs"
-    run_pipeline(input_path, output_path)
+def process_dataset(input_path, out_path):
+    """
+    A reusable function to process a dataset.
+    """
+    check_directory(out_path)  # Ensure the output directory exists
+    output_path = os.path.join(out_path, "graphs")  # Create the graphs directory path
+    run_pipeline(input_path, output_path)  # Run the pipeline
 
-    input_path = "D:/Equivarance_property_prediction/data/New_test.csv"
-    output_path = "D:/Equivarance_property_prediction/data/processed_test/graphs"
-    run_pipeline(input_path, output_path)
+
+
+if __name__ == "__main__":
+    for dataset, paths in DATASET_PATHS.items():
+        input_path = paths["input"]
+        out_path = paths["output"]
+        print(f"Processing {dataset} dataset...")
+        process_dataset(input_path, out_path)

@@ -39,7 +39,7 @@ MODELS = {
 
 
 TRAINING_CONFIG = {
-    "max_epochs": 10,
+    "max_epochs": 50,
     "gradient_clip_val": 1.0,
     "train_batch_size": 256,
     "val_batch_size": 512,

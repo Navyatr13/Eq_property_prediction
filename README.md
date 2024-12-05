@@ -108,7 +108,15 @@ Visualize Results:
 Optimize Hyperparameters:
 
 ``` python scripts/hyper_parameter.py```
-Authors
-This project was created by Navya Ramesh. For inquiries, please contact: navyatr06@gmail.com .
+
+### Future Directions
+- Explore additional features for molecular graphs, such as 3D conformer descriptors.
+- Implement hyperparameter optimization to improve test AUROC.
+- Experiment with alternative architectures like GAT or GraphSAGE.
+
+### Learning Outcomes
+- Learned how to process molecular SMILES data into graph representations.
+- Gained experience using PyTorch Geometric and PyTorch Lightning.
+- Explored techniques for graph-level pooling and visualization with UMAP.
 
 

@@ -75,49 +75,26 @@ Visualizes training losses.
 Plots ROC curves to assess classification performance.
 
 ### Key Modules
-1. Data Processing
+##### 1. Data Processing
 Located in data_processing/, these modules handle SMILES data loading and graph conversion:
 
 read_data.py: Reads SMILES strings and their labels into a pandas DataFrame.
 mol_to_graph.py: Converts molecular data into graph structures.
-2. Models
+##### 2. Models
 Located in models/, this directory contains various GNN implementations:
 
 gnn.py: Implements a standard GNN model.
 mpnn.py: Implements a Message Passing Neural Network (MPNN).
-3. Training
+##### 3. Training
 The train_gnn.py script in scripts/ handles model training:
 
 Utilizes pytorch-lightning for efficient model training.
 Includes early stopping for improved training efficiency.
-4. Visualization
+##### 4. Visualization
 The visualization.py script provides:
 
 Loss plots over training epochs.
 ROC curves for model evaluation.
-How to Extend the Project
-Add More Models:
-
-Implement additional GNN variants in models/.
-Custom Data:
-
-Update run_datapipeline.py to handle new datasets.
-Advanced Visualizations:
-
-Extend visualization.py to include more evaluation metrics (e.g., Precision-Recall curves).
-File-Specific Details
-scripts/run_datapipeline.py
-Purpose: Converts SMILES data into graph format and saves it in batches.
-Inputs: Raw SMILES data in CSV format (Canonical_SMILES and Toxicity_Value columns).
-Outputs: Graph objects saved as .pt files for efficient loading.
-scripts/train_gnn.py
-Purpose: Trains a GNN model using processed graph data.
-Inputs: Graph files from run_datapipeline.py.
-Outputs: Trained model and validation metrics.
-scripts/hyper_parameter.py
-Purpose: Performs hyperparameter tuning for the GNN model.
-scripts/visualization.py
-Purpose: Provides visual analysis of training performance (loss curves, ROC curves).
 
 ### Example Workflow
 Process SMILES Data:

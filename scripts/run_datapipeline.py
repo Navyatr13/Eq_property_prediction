@@ -66,13 +66,16 @@ def run_pipeline(input_path, output_path, batch_size=100):
 
 def process_dataset(input_path, out_path):
     """
-    A reusable function to process a dataset.
+    A reusable function to process a dataset only if the output directory exists and is not empty.
     """
-    check_directory(out_path)  # Ensure the output directory exists
-    output_path = os.path.join(out_path, "graphs")  # Create the graphs directory path
-    run_pipeline(input_path, output_path)  # Run the pipeline
-
-
+    # Check if the output directory exists
+    if os.path.exists(out_path) and os.listdir(out_path):
+        print(f"Directory '{out_path}' already exists and is not empty. Skipping processing.")
+    else:
+        print(f"Processing dataset. Directory '{out_path}' is empty or does not exist.")
+        check_directory(out_path)  # Ensure the output directory exists
+        output_path = os.path.join(out_path, "graphs")  # Create the graphs directory path
+        run_pipeline(input_path, output_path)  # Run the pipeline
 
 if __name__ == "__main__":
     for dataset, paths in DATASET_PATHS.items():

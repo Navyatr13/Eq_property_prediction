@@ -32,7 +32,7 @@ def process_batches(batch_dir, batch_size=32, shuffle=True):
     return loader
 
 
-def get_train_val_loaders(train_dir, val_dir, train_batch_size=32, val_batch_size=32):
+def get_train_val_loaders(train_dir, val_dir, test_dir, train_batch_size=32, val_batch_size=32, test_batch_size = 32):
     """
     Generate DataLoaders for both training and validation data.
 
@@ -47,12 +47,14 @@ def get_train_val_loaders(train_dir, val_dir, train_batch_size=32, val_batch_siz
     """
     train_loader = process_batches(train_dir, batch_size=train_batch_size, shuffle=True)
     val_loader = process_batches(val_dir, batch_size=val_batch_size, shuffle=False)
+    test_loader = process_batches(test_dir, batch_size=val_batch_size, shuffle=False)
 
-    return train_loader, val_loader
+    return train_loader, val_loader, test_loader
 
 
 # usage
-train_dir = "D:/Equivarance_property_prediction/data/processed_train/"
-val_dir = "D:/Equivarance_property_prediction/data/processed_val/"
+train_dir = "./data/processed_train/"
+val_dir = "./data/processed_val/"
+test_dir = "./data/processed_test/"
 
-#train_loader, val_loader = get_train_val_loaders(train_dir, val_dir)
+#train_loader, val_loader, test_loader = get_train_val_loaders(train_dir, val_dir, test_dir)

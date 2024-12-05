@@ -1,5 +1,6 @@
 import torch
 import os
+import sys
 from torch_geometric.data import Dataset, Data  # Ensure both Dataset and Data are imported
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -10,8 +11,9 @@ import logging
 import warnings
 from rdkit import RDLogger
 from sklearn.preprocessing import MinMaxScaler
-from scripts.config import unique_atomic_numbers
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(project_root)
 # Suppress all warnings
 warnings.filterwarnings("ignore")
 # Suppress RDKit-specific warnings
@@ -30,6 +32,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(message)s"
 )
+
+unique_atomic_numbers = [1, 3, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 35, 44, 46, 48, 50, 53, 56, 60, 78, 79, 80, 81, 83]
 
 
 def get_node_features(mol, unique_atomic_numbers):
@@ -53,11 +57,11 @@ def get_node_features(mol, unique_atomic_numbers):
 
         # Additional features
         additional_features.append([
-            int(atom.GetIsAromatic()),  # Aromaticity (0/1)
-            atom.GetDegree(),  # Atom degree (int)
-            atom.GetTotalValence(),  # Total valence electrons (int)
-            atom.GetFormalCharge(),  # Formal charge (int)
-            int(atom.GetHybridization()),  # Hybridization as integer enum
+            int(atom.GetIsAromatic()),          # Aromaticity (0/1)
+            atom.GetDegree(),                   # Atom degree (int)
+            atom.GetTotalValence(),             # Total valence electrons (int)
+            atom.GetFormalCharge(),             # Formal charge (int)
+            int(atom.GetHybridization()),       # Hybridization as integer enum
         ])
 
     # Convert atomic numbers to one-hot encoding
@@ -97,8 +101,8 @@ def get_edge_features(mol, conformer):
 
         edge_features.append([
             int(bond.GetBondTypeAsDouble()),  # Bond type as double
-            bond.GetIsConjugated(),  # Is conjugated (True/False)
-            bond_length  # Bond length
+            bond.GetIsConjugated(),          # Is conjugated (True/False)
+            bond_length                      # Bond length
         ])
         # Add both directions (undirected graph)
         edge_indices.append((i, j))
@@ -109,65 +113,43 @@ def get_edge_features(mol, conformer):
     return edge_indices, edge_features
 
 
+
+
 def molecule_to_graph(smiles, target):
-    """
-    Converts a SMILES string into a PyTorch Geometric Data object.
-
-    Args:
-        smiles (str): SMILES string.
-        target (float): Target property value.
-
-    Returns:
-        Data: A PyTorch Geometric Data object with x, edge_index, edge_attr, pos, and y.
-    """
     try:
-        # Create RDKit molecule object
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
             raise ValueError(f"Invalid SMILES string: {smiles}")
 
-        # Add hydrogens
         mol = Chem.AddHs(mol)
-
-        # Generate 3D conformer
         status = AllChem.EmbedMolecule(mol)
         if status != 0:
             raise ValueError(f"Conformer generation failed for SMILES: {smiles}")
 
         conformer = mol.GetConformer()
-
-        # Get node features
         x = get_node_features(mol, unique_atomic_numbers)
-
-        # Get edge features and indices
         edge_index, edge_attr = get_edge_features(mol, conformer)
-        # scaler = MinMaxScaler()
-        # edge_attr = scaler.fit_transform(edge_attr)
-
-        # Get 3D positions
         pos = torch.tensor([[conformer.GetAtomPosition(i).x,
                              conformer.GetAtomPosition(i).y,
                              conformer.GetAtomPosition(i).z] for i in range(mol.GetNumAtoms())], dtype=torch.float)
 
-        # Normalize positions (per molecule)
         pos_mean = pos.mean(dim=0, keepdim=True)
         pos_centered = pos - pos_mean
         max_dist = pos_centered.norm(p=2, dim=1).max()
+        if max_dist == 0:
+            max_dist = 1.0
         pos_normalized = pos_centered / max_dist
 
-        # Concatenate positions to node features
         x = torch.cat([x, pos_normalized], dim=1)
-
-        # Add target property
         y = torch.tensor([target], dtype=torch.float)
 
+        if torch.isnan(x).any() or torch.isnan(edge_attr).any() or torch.isnan(pos_normalized).any():
+            raise ValueError("NaN detected in graph components.")
+
         return Data(x=x, edge_index=edge_index, edge_attr=edge_attr, pos=pos_normalized, y=y)
-
-
     except Exception as e:
-        # Log the issue and return None for problematic molecules
         logging.error(f"Error processing molecule: {smiles}, Error: {e}")
-        # return None
+        raise
 
 
 def get_unique_atomic_numbers(dataset_smiles):
@@ -223,5 +205,5 @@ class MoleculeDataset(Dataset):
         actual_idx = self._indices[idx]
         smiles = self.data_frame.iloc[actual_idx]['Canonical_SMILES']
         target = self.data_frame.iloc[actual_idx]['Toxicity_Value']
-        print(smiles, target)
+        print(smiles,target)
         return molecule_to_graph(smiles, target, self.unique_atomic_numbers)

@@ -112,13 +112,7 @@ class GNNModel(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        print(batch)
         # Validation step
-        '''out = self(batch)  # Forward pass
-        target = batch.y.long()
-        loss = F.cross_entropy(out, target, weight=self.class_weights)  # Calculate loss
-        acc = (out.argmax(dim=1) == batch.y).float().mean()  # Calculate accuracy
-        roc_auc = self.compute_roc_auc(out, target)'''
         out, embeddings = self(batch)  # Forward pass
         out = out.squeeze()
         target = batch.y.float()
@@ -157,6 +151,33 @@ class GNNModel(LightningModule):
         self.log('val_acc', accuracy, prog_bar=True)  # Log validation accuracy
         self.log('val_roc_auc', roc_auc, prog_bar=False)
         return {"val_loss": loss, "val_roc_auc": roc_auc}
+
+    def test_step(self, batch, batch_idx):
+        # Forward pass
+        out, _ = self(batch)  # Model output and embeddings
+        out = out.squeeze()
+        target = batch.y.float()
+
+        # Calculate loss
+        loss = F.binary_cross_entropy_with_logits(out, target)
+
+        # Convert logits to probabilities
+        probabilities = torch.sigmoid(out)
+
+        # Calculate ROC-AUC
+        roc_auc = self.compute_roc_auc(probabilities, target)
+
+        # Calculate accuracy
+        predicted = (probabilities > 0.5).float()  # Threshold at 0.5
+        accuracy = (predicted == target).float().mean()
+
+        # Log metrics
+        self.log('test_loss', loss, prog_bar=True)
+        self.log('test_acc', accuracy, prog_bar=True)
+        self.log('test_roc_auc', roc_auc, prog_bar=False)
+
+        return {"test_loss": loss, "test_roc_auc": roc_auc, "test_acc": accuracy}
+
         
     def on_train_epoch_end(self):        
         all_preds, all_targets = zip(*self.train_outputs)
@@ -222,15 +243,8 @@ class GNNModel(LightningModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_loss"}
 
     def compute_roc_auc(self, predictions, targets):
-        """
-        Computes the ROC-AUC score for binary classification.
-        """
-        # Apply sigmoid to convert logits to probabilities
         probabilities = torch.sigmoid(predictions).detach().cpu().numpy()
-    
-        # Convert targets to numpy
         targets = targets.detach().cpu().numpy()
-    
         try:
             roc_auc = roc_auc_score(targets, probabilities)
         except ValueError:
